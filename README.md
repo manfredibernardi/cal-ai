@@ -1,6 +1,4 @@
-# NutriVision - Meal Analysis App
 
-NutriVision is a web application that analyzes food images to provide calorie estimates and macronutrient breakdowns. Using advanced AI vision technology, it helps users track their nutrition by simply uploading or capturing photos of their meals.
 
 ## Features
 
