@@ -1,51 +1,9 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "api/basic/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9"
-      }
-    },
-    {
-      "src": "api/test/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9"
-      }
-    },
-    {
-      "src": "api/calendar/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9"
-      }
-    },
-    {
-      "src": "api/hello.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9"
-      }
-    }
+    { "src": "api/**/*.py", "use": "@vercel/python" }
   ],
   "routes": [
-    {
-      "src": "/api/test",
-      "dest": "/api/test/index.py"
-    },
-    {
-      "src": "/api/calendar",
-      "dest": "/api/calendar/index.py"
-    },
-    {
-      "src": "/api/hello",
-      "dest": "/api/hello.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/basic/index.py"
-    }
+    { "src": "/api/(.*)", "dest": "/api/$1" }
   ]
 } 
