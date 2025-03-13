@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import requests
 from dotenv import load_dotenv
+import traceback
 from openai import OpenAI
 import json
 from PIL import Image  # Add Pillow for image conversion
@@ -12,12 +13,24 @@ from PIL import Image  # Add Pillow for image conversion
 # Load environment variables
 load_dotenv()
 
+# Configure logging for Vercel
+if os.environ.get('VERCEL_ENV'):
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info("Running in Vercel environment")
+
 # Ensure required environment variables are set
 required_env_vars = ["OPENAI_API_KEY", "USDA_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
-    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+    error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+    if os.environ.get('VERCEL_ENV'):
+        print(error_msg)  # Print to Vercel logs
+    else:
+        raise ValueError(error_msg)
 
+# Initialize Flask app
 app = Flask(__name__, static_folder='static')
 
 @app.route('/')
@@ -26,16 +39,22 @@ def index():
         return render_template('index.html')
     except Exception as e:
         print(f"Error serving index: {str(e)}")
+        traceback.print_exc()
         return app.send_static_file('index.html')
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify(error=str(e)), 500
+    error_msg = str(e)
+    print(f"Server error: {error_msg}")
+    traceback.print_exc()
+    return jsonify(error=error_msg), 500
 
+# Set upload folder based on environment
 app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL_ENV') else 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 print(f"Allowed extensions set to: {app.config['ALLOWED_EXTENSIONS']}")
+print(f"Upload folder set to: {app.config['UPLOAD_FOLDER']}")
 
 # Create uploads folder if it doesn't exist and we're not in Vercel
 if not os.environ.get('VERCEL_ENV'):
