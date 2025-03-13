@@ -12,8 +12,8 @@ class handler(BaseHTTPRequestHandler):
         path = url_parts.path
         query_params = parse_qs(url_parts.query)
         
-        # Get all events
-        if path == '/api/calendar' or path == '/api/calendar/':
+        # Get all events - Vercel routes to /api/calendar, so we check for / or empty path
+        if path == '/' or path == '':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -33,7 +33,7 @@ class handler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         """Handle POST requests to create new events"""
-        if self.path == '/api/calendar' or self.path == '/api/calendar/':
+        if self.path == '/' or self.path == '':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
@@ -75,7 +75,7 @@ class handler(BaseHTTPRequestHandler):
         path = url_parts.path
         query_params = parse_qs(url_parts.query)
         
-        if path == '/api/calendar' or path == '/api/calendar/':
+        if path == '/' or path == '':
             if 'id' not in query_params:
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
@@ -125,7 +125,7 @@ class handler(BaseHTTPRequestHandler):
         path = url_parts.path
         query_params = parse_qs(url_parts.query)
         
-        if path == '/api/calendar' or path == '/api/calendar/':
+        if path == '/' or path == '':
             if 'id' not in query_params:
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
