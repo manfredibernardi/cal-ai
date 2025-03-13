@@ -40,6 +40,10 @@ if missing_vars:
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
 
+# Import and register the MCP blueprint after app is created
+from api.mcp import mcp_blueprint
+app.register_blueprint(mcp_blueprint)
+
 @app.route('/')
 def index():
     try:
@@ -48,6 +52,25 @@ def index():
         print(f"Error serving index: {str(e)}")
         traceback.print_exc()
         return app.send_static_file('index.html')
+
+@app.route('/api/debug')
+def debug_info():
+    """Return debug information about the environment"""
+    debug_data = {
+        "environment": {
+            "VERCEL_ENV": os.environ.get('VERCEL_ENV'),
+            "PYTHONPATH": os.environ.get('PYTHONPATH'),
+            "FLASK_ENV": os.environ.get('FLASK_ENV'),
+        },
+        "directories": {
+            "current": os.getcwd(),
+            "static_folder": app.static_folder,
+            "template_folder": app.template_folder,
+            "static_exists": os.path.exists(app.static_folder) if app.static_folder else False,
+            "templates_exist": os.path.exists(app.template_folder) if app.template_folder else False,
+        }
+    }
+    return jsonify(debug_data)
 
 @app.errorhandler(500)
 def server_error(e):
