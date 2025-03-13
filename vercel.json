@@ -1,12 +1,13 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "api/**/*.py", "use": "@vercel/python" }
+    { "src": "vercel.py", "use": "@vercel/python" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/api/$1" }
+    { "src": "/(.*)", "dest": "/vercel.py" }
   ],
   "env": {
     "FLASK_ENV": "production"
