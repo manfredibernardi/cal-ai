@@ -8,7 +8,14 @@ from dotenv import load_dotenv
 import traceback
 from openai import OpenAI
 import json
-from PIL import Image  # Add Pillow for image conversion
+
+# Try to import Pillow, but handle failure gracefully
+try:
+    from PIL import Image
+    PILLOW_AVAILABLE = True
+except ImportError:
+    print("Warning: Pillow (PIL) is not available. Image conversion features will be limited.")
+    PILLOW_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -445,6 +452,31 @@ def extract_number(text, *keywords):
                     return float(numbers[0])
     return 0  # Default if no number found
 
+def convert_image_format(input_path, output_path, format='JPEG'):
+    """Convert image to another format if Pillow is available"""
+    if not PILLOW_AVAILABLE:
+        print("Warning: Cannot convert image format because Pillow is not available")
+        # Just copy the file as a fallback
+        with open(input_path, 'rb') as src, open(output_path, 'wb') as dst:
+            dst.write(src.read())
+        return False
+    
+    try:
+        with Image.open(input_path) as img:
+            # Handle transparency if needed
+            if img.mode in ('RGBA', 'LA'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])  # 3 is the alpha channel
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            img.save(output_path, format, quality=90)
+        return True
+    except Exception as e:
+        print(f"Error converting image: {str(e)}")
+        return False
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     if 'file' not in request.files and 'image_data' not in request.form:
@@ -467,48 +499,35 @@ def analyze():
             file.save(original_filepath)
             print(f"Original file saved to: {original_filepath}")
             
-            # For WebP files, convert to JPEG
+            # For WebP files, convert to JPEG if Pillow is available
             if filename.lower().endswith('.webp'):
                 print("Converting WebP to JPEG...")
-                try:
-                    # Convert the image
-                    processed_filepath = os.path.join(app.config['UPLOAD_FOLDER'], "processed_" + filename.rsplit('.', 1)[0] + ".jpg")
-                    
-                    # Open and convert the image
-                    with Image.open(original_filepath) as img:
-                        # WebP might have transparency, convert to RGB
-                        if img.mode in ('RGBA', 'LA'):
-                            background = Image.new('RGB', img.size, (255, 255, 255))
-                            background.paste(img, mask=img.split()[3])  # 3 is the alpha channel
-                            img = background
-                        elif img.mode != 'RGB':
-                            img = img.convert('RGB')
-                        
-                        img.save(processed_filepath, 'JPEG', quality=90)
-                    
+                processed_filepath = os.path.join(app.config['UPLOAD_FOLDER'], "processed_" + filename.rsplit('.', 1)[0] + ".jpg")
+                
+                if convert_image_format(original_filepath, processed_filepath):
                     print(f"Converted image saved to: {processed_filepath}")
+                    filepath_to_analyze = processed_filepath
+                else:
+                    print("Could not convert WebP, using original file")
+                    filepath_to_analyze = original_filepath
                     
-                    # Use the converted image for analysis
-                    try:
-                        result = analyze_image_with_gpt_vision(processed_filepath)
-                        # Clean up files after analysis
-                        os.remove(original_filepath)
-                        os.remove(processed_filepath)
-                        return jsonify(result)
-                    except Exception as analysis_error:
-                        print(f"Error analyzing converted image: {str(analysis_error)}")
-                        # Clean up files
-                        if os.path.exists(original_filepath):
-                            os.remove(original_filepath)
-                        if os.path.exists(processed_filepath):
-                            os.remove(processed_filepath)
-                        raise
-                        
-                except Exception as conversion_error:
-                    print(f"Error converting WebP to JPEG: {str(conversion_error)}")
+                # Use the processed or original image for analysis
+                try:
+                    result = analyze_image_with_gpt_vision(filepath_to_analyze)
+                    # Clean up files after analysis
                     if os.path.exists(original_filepath):
                         os.remove(original_filepath)
-                    return jsonify({"success": False, "error": f"Error converting image: {str(conversion_error)}"})
+                    if os.path.exists(processed_filepath) and original_filepath != processed_filepath:
+                        os.remove(processed_filepath)
+                    return jsonify(result)
+                except Exception as analysis_error:
+                    print(f"Error analyzing image: {str(analysis_error)}")
+                    # Clean up files
+                    if os.path.exists(original_filepath):
+                        os.remove(original_filepath)
+                    if os.path.exists(processed_filepath) and original_filepath != processed_filepath:
+                        os.remove(processed_filepath)
+                    raise
             
             # For non-WebP files
             else:
@@ -550,47 +569,43 @@ def analyze():
                 # Decode base64 to binary
                 image_binary = base64.b64decode(image_data)
                 
-                # If it's a WebP image, convert it to JPEG
+                # If it's a WebP image, convert it to JPEG if Pillow is available
                 if content_type == 'image/webp':
                     print("Converting WebP base64 image to JPEG...")
                     temp_webp_path = os.path.join(app.config['UPLOAD_FOLDER'], "temp_webcam.webp")
                     temp_jpg_path = os.path.join(app.config['UPLOAD_FOLDER'], "temp_webcam.jpg")
+                    
+                    # Save the original WebP image
+                    with open(temp_webp_path, 'wb') as f:
+                        f.write(image_binary)
+                    
+                    if convert_image_format(temp_webp_path, temp_jpg_path):
+                        print(f"Converted base64 image saved to: {temp_jpg_path}")
+                        filepath_to_analyze = temp_jpg_path
+                    else:
+                        print("Could not convert WebP, using original file")
+                        filepath_to_analyze = temp_webp_path
+                    
+                    # Analyze the image
                     try:
-                        # Save the original WebP image
-                        with open(temp_webp_path, 'wb') as f:
-                            f.write(image_binary)
-                        
-                        # Convert to JPEG
-                        with Image.open(temp_webp_path) as img:
-                            # Handle transparency if needed
-                            if img.mode in ('RGBA', 'LA'):
-                                background = Image.new('RGB', img.size, (255, 255, 255))
-                                background.paste(img, mask=img.split()[3])  # 3 is the alpha channel
-                                img = background
-                            elif img.mode != 'RGB':
-                                img = img.convert('RGB')
-                            
-                            img.save(temp_jpg_path, 'JPEG', quality=90)
-                        
-                        # Read the converted JPEG and analyze it
-                        result = analyze_image_with_gpt_vision(temp_jpg_path)
+                        result = analyze_image_with_gpt_vision(filepath_to_analyze)
                         
                         # Clean up temporary files
                         if os.path.exists(temp_webp_path):
                             os.remove(temp_webp_path)
-                        if os.path.exists(temp_jpg_path):
+                        if os.path.exists(temp_jpg_path) and temp_webp_path != temp_jpg_path:
                             os.remove(temp_jpg_path)
                         
                         return jsonify(result)
                     
-                    except Exception as conversion_error:
-                        print(f"Error converting WebP base64 to JPEG: {str(conversion_error)}")
+                    except Exception as analysis_error:
+                        print(f"Error analyzing WebP base64 image: {str(analysis_error)}")
                         # Clean up any temporary files
                         if os.path.exists(temp_webp_path):
                             os.remove(temp_webp_path)
-                        if os.path.exists(temp_jpg_path):
+                        if os.path.exists(temp_jpg_path) and temp_webp_path != temp_jpg_path:
                             os.remove(temp_jpg_path)
-                        return jsonify({"success": False, "error": f"Error converting WebP image: {str(conversion_error)}"})
+                        return jsonify({"success": False, "error": f"Error analyzing WebP image: {str(analysis_error)}"})
                 
                 # For other image types, process directly
                 else:
