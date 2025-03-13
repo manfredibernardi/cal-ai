@@ -1,55 +1,19 @@
-from flask import Flask, Response, request
+from flask import Flask
 import sys
 import os
 from pathlib import Path
-import traceback
-import json
 
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-try:
-    # Import the Flask app from the main app.py
-    from app import app
-    print("Successfully imported Flask app")
-except Exception as e:
-    print(f"Error importing app: {str(e)}")
-    traceback.print_exc()
+# Import the Flask app from the main app.py
+from app import app
 
-# This is the Vercel serverless function entry point
-def handler(req):
-    """Handle incoming requests from Vercel."""
-    try:
-        print(f"Request method: {req.method}, path: {req.path}")
-        
-        if req.method == "GET" and not req.path.startswith('/static/'):
-            try:
-                return app.send_static_file('index.html')
-            except Exception as e:
-                print(f"Error serving static file: {str(e)}")
-                traceback.print_exc()
-                return Response(f"Server error: {str(e)}", status=500)
-        
-        with app.test_client() as test_client:
-            # Create appropriate WSGI environment
-            response = test_client.request(
-                method=req.method,
-                path=req.path,
-                headers={key: value for key, value in req.headers.items() if key != 'Host'},
-                data=req.get_data(),
-                environ_base={'REMOTE_ADDR': req.headers.get('X-Forwarded-For', '127.0.0.1')}
-            )
-            
-            # Return Flask response to Vercel
-            return Response(
-                response.get_data(),
-                status=response.status_code,
-                headers=dict(response.headers)
-            )
-    except Exception as e:
-        print(f"Handler error: {str(e)}")
-        traceback.print_exc()
-        return Response(f"Server error: {str(e)}", status=500)
+# This is required for Vercel
+def handler(request):
+    """Handle incoming requests."""
+    with app.request_context(request):
+        return app.handle_request()
 
 # For Vercel Python runtime
 from http.server import BaseHTTPRequestHandler
