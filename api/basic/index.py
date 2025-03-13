@@ -1,8 +1,9 @@
-def handler(request, context):
-    """
-    Basic Vercel Python serverless function.
-    """
-    return {
-        "statusCode": 200,
-        "body": "Hello from Vercel Python serverless function!"
-    } 
+from http.server import BaseHTTPRequestHandler
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write('Hello, World!'.encode('utf-8'))
+        return 
