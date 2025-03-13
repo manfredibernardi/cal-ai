@@ -2,32 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.9",
-        "includedFiles": ["**/*.py", "**/*.html", "static/**", "templates/**"],
-        "installCommand": "pip install -r requirements.txt"
-      }
-    },
-    {
-      "src": "static/**",
-      "use": "@vercel/static"
+      "src": "api/simple/index.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/api/index.py"
+      "dest": "api/simple/index.py"
     }
-  ],
-  "env": {
-    "PYTHONPATH": ".",
-    "FLASK_ENV": "production",
-    "VERCEL_ENV": "production"
-  }
+  ]
 } 
