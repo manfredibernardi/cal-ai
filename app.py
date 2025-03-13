@@ -12,18 +12,21 @@ from PIL import Image  # Add Pillow for image conversion
 # Load environment variables
 load_dotenv()
 
-# Set API keys - use environment variables if set, otherwise use defaults
-if not os.getenv("USDA_API_KEY"):
-    os.environ["USDA_API_KEY"] = "kUcxXj8yG2CN1Yr94C3j0Me7GExe032qTirT5hcI"
+# Ensure required environment variables are set
+required_env_vars = ["OPENAI_API_KEY", "USDA_API_KEY"]
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = '/tmp/uploads' if os.environ.get('VERCEL_ENV') else 'uploads'
+app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL_ENV') else 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 print(f"Allowed extensions set to: {app.config['ALLOWED_EXTENSIONS']}")
 
-# Create uploads folder if it doesn't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Create uploads folder if it doesn't exist and we're not in Vercel
+if not os.environ.get('VERCEL_ENV'):
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     """Check if file has an allowed extension"""
