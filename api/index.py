@@ -1,64 +1,57 @@
-from flask import Flask, Response
+from flask import Flask, redirect
 import sys
 import os
 from pathlib import Path
-import traceback
-import json
 
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-# Import the Flask app from the main app.py
+# Import the Flask app from app.py
 from app import app
 
-# This is required for Vercel
-def handler(request):
-    """Handle incoming requests."""
-    try:
-        with app.request_context(request):
-            return app.handle_request()
-    except Exception as e:
-        print(f"Handler error: {str(e)}")
-        traceback.print_exc()
-        return Response(json.dumps({"error": str(e)}), status=500, mimetype='application/json')
+# Set up WSGI app with correct paths for Vercel
+app.static_folder = Path(__file__).parent.parent / 'static'
+app.template_folder = Path(__file__).parent.parent / 'templates'
 
-# For Vercel Python runtime
-from http.server import BaseHTTPRequestHandler
-
-class VercelHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self._handle_request()
-    
-    def do_POST(self):
-        self._handle_request()
-    
-    def _handle_request(self):
+# Handler for Vercel - this is what Vercel calls
+def handler(request, context):
+    """
+    This is the handler that Vercel calls when your serverless function is triggered.
+    """
+    with app.test_request_context(
+        path=request.get('path', '/'),
+        method=request.get('method', 'GET'),
+        headers=request.get('headers', {}),
+        data=request.get('body', b'')
+    ):
         try:
-            # Create a request-like object for handler
-            class RequestWrapper:
-                def __init__(self, handler):
-                    self.method = handler.command
-                    self.path = handler.path
-                    self.headers = {k: v for k, v in handler.headers.items()}
-                
-                def get_data(self):
-                    content_length = int(self.headers.get('Content-Length', 0))
-                    return handler.rfile.read(content_length) if content_length > 0 else b''
-            
-            # Process request through Flask
-            req = RequestWrapper(self)
-            response = handler(req)
-            
-            # Send response back
-            self.send_response(response.status_code)
-            for header, value in response.headers.items():
-                self.send_header(header, value)
-            self.end_headers()
-            self.wfile.write(response.get_data())
+            # Process the request through the Flask app
+            return app.full_dispatch_request()
         except Exception as e:
-            print(f"Server error: {str(e)}")
-            traceback.print_exc()
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8')) 
+            app.logger.error(f"Error handling request: {str(e)}")
+            response = app.make_response(f"Server error: {str(e)}")
+            response.status_code = 500
+            return response
+
+# For Vercel platform
+def render_page(path):
+    """
+    This is called by Vercel platform to render a page.
+    """
+    return app
+
+# Default route - this will be used if request is directly to index.py
+@app.route('/api/health')
+def health_check():
+    """
+    Simple health check endpoint to verify the function is working.
+    """
+    return {"status": "ok"}
+
+# Handle invalid paths
+@app.route('/api/<path:invalid_path>')
+def handle_invalid_api_route(invalid_path):
+    """
+    Redirect API routes to the main app.
+    """
+    return redirect('/') 
