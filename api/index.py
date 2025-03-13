@@ -1,7 +1,9 @@
-from flask import Flask
+from flask import Flask, Response
 import sys
 import os
 from pathlib import Path
+import traceback
+import json
 
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -12,8 +14,13 @@ from app import app
 # This is required for Vercel
 def handler(request):
     """Handle incoming requests."""
-    with app.request_context(request):
-        return app.handle_request()
+    try:
+        with app.request_context(request):
+            return app.handle_request()
+    except Exception as e:
+        print(f"Handler error: {str(e)}")
+        traceback.print_exc()
+        return Response(json.dumps({"error": str(e)}), status=500, mimetype='application/json')
 
 # For Vercel Python runtime
 from http.server import BaseHTTPRequestHandler
