@@ -18,7 +18,20 @@ missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+
+@app.route('/')
+def index():
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"Error serving index: {str(e)}")
+        return app.send_static_file('index.html')
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify(error=str(e)), 500
+
 app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL_ENV') else 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -412,10 +425,6 @@ def extract_number(text, *keywords):
                 if numbers:
                     return float(numbers[0])
     return 0  # Default if no number found
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
