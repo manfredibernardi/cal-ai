@@ -21,6 +21,13 @@
       "config": {
         "runtime": "python3.9"
       }
+    },
+    {
+      "src": "api/hello.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9"
+      }
     }
   ],
   "routes": [
@@ -31,6 +38,10 @@
     {
       "src": "/api/calendar",
       "dest": "/api/calendar/index.py"
+    },
+    {
+      "src": "/api/hello",
+      "dest": "/api/hello.py"
     },
     {
       "src": "/(.*)",
