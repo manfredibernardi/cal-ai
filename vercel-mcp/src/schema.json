@@ -1,0 +1,423 @@
+{
+  "functions": [
+    {
+      "name": "mcp__list_projects",
+      "description": "List all projects from Vercel. Commands: 'list projects', 'show projects', 'get projects', 'list all projects', 'show all projects', 'get all projects', 'list vercel projects', 'show my projects', 'list my projects', 'get my projects', 'retrieve projects', 'fetch projects', 'display projects', 'view projects'",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__create_project",
+      "description": "Create a new project with the provided configuration",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The desired name for the project",
+            "maxLength": 100,
+            "pattern": "^(?!.*---)[a-z0-9-_.]+$"
+          },
+          "framework": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["blitzjs", "nextjs", "gatsby", "remix"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The framework being used for this project"
+          },
+          "gitRepository": {
+            "type": "object",
+            "description": "The Git Repository to connect",
+            "required": ["type", "repo"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["github", "gitlab", "bitbucket"]
+              },
+              "repo": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "buildCommand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The build command for this project"
+          },
+          "devCommand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The dev command for this project"
+          },
+          "installCommand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The install command for this project"
+          },
+          "outputDirectory": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The output directory of the project"
+          },
+          "rootDirectory": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The directory or relative path to the source code"
+          },
+          "serverlessFunctionRegion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The region to deploy Serverless Functions"
+          },
+          "serverlessFunctionZeroConfigFailover": {
+            "type": "boolean",
+            "description": "Enable Zero Config Failover"
+          },
+          "publicSource": {
+            "type": ["boolean", "null"],
+            "description": "Whether source code and logs should be public"
+          },
+          "environmentVariables": {
+            "type": "array",
+            "description": "Collection of ENV Variables",
+            "items": {
+              "type": "object",
+              "required": ["key", "value"],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["system", "secret", "encrypted", "plain"]
+                },
+                "target": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "gitBranch": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "enableAffectedProjectsDeployments": {
+            "type": "boolean",
+            "description": "Skip deployments when no changes to root directory"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__delete_project",
+      "description": "Delete a specific project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "The unique project identifier or project name"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__list_deployments",
+      "description": "List deployments for a project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": "Filter deployments from the given project ID"
+          },
+          "app": {
+            "type": "string",
+            "description": "Name of the deployment"
+          },
+          "state": {
+            "type": "string",
+            "description": "Filter by deployment state (BUILDING, ERROR, INITIALIZING, QUEUED, READY, CANCELED)"
+          },
+          "target": {
+            "type": "string",
+            "description": "Filter deployments based on environment"
+          },
+          "since": {
+            "type": "number",
+            "description": "Get deployments created after this timestamp"
+          },
+          "until": {
+            "type": "number",
+            "description": "Get deployments created before this timestamp"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of deployments to list"
+          },
+          "users": {
+            "type": "string",
+            "description": "Filter deployments by user IDs (comma-separated)"
+          },
+          "rollbackCandidate": {
+            "type": "boolean",
+            "description": "Filter deployments based on rollback candidacy"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__add_domain",
+      "description": "Add a domain to a project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName", "domain"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "Project ID or name"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain name to add"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__remove_domain",
+      "description": "Remove a domain from a project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName", "domain"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "Project ID or name"
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain name to remove"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__list_domains",
+      "description": "List all domains for a project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "Project ID or name"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__add_env",
+      "description": "Add environment variables to a project",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName", "env"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "Project ID or name"
+          },
+          "env": {
+            "type": "array",
+            "description": "Environment variables to add",
+            "items": {
+              "type": "object",
+              "required": ["key", "value"],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "mcp__list_env",
+      "description": "List all environment variables",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "required": ["idOrName"],
+        "properties": {
+          "idOrName": {
+            "type": "string",
+            "description": "Project ID or name"
+          },
+          "teamId": {
+            "type": "string",
+            "description": "The Team identifier to perform the request on behalf of"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The Team slug to perform the request on behalf of"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+} 
