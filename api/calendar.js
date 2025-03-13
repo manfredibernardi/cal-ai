@@ -1,7 +1,7 @@
 // In-memory storage for calendar events (in a real app, this would be a database)
 const events = [];
 
-export default function handler(req, res) {
+module.exports = (req, res) => {
   if (req.method === 'GET') {
     // Return all events
     res.status(200).json(events);
