@@ -1,14 +1,8 @@
-from flask import Flask, redirect, jsonify
-import sys
+from flask import Flask, jsonify
 import os
+import sys
 import traceback
 from pathlib import Path
-
-# Add the parent directory to Python path
-parent_dir = str(Path(__file__).parent.parent)
-sys.path.append(parent_dir)
-print(f"Added parent directory to path: {parent_dir}")
-print(f"Python path: {sys.path}")
 
 # Configure logging
 import logging
@@ -16,30 +10,50 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info(f"Starting serverless function. Working directory: {os.getcwd()}")
 
-try:
-    # Import the Flask app from app.py
-    from app import app
-    logger.info("Successfully imported app")
-    
-    # Set up WSGI app with correct paths for Vercel
-    app.static_folder = Path(__file__).parent.parent / 'static'
-    app.template_folder = Path(__file__).parent.parent / 'templates'
-    logger.info(f"Set static folder to {app.static_folder}")
-    logger.info(f"Set template folder to {app.template_folder}")
-except Exception as e:
-    logger.error(f"Error importing app: {str(e)}")
-    logger.error(traceback.format_exc())
-    # Create a minimal app for error reporting
-    app = Flask(__name__)
-    
-    @app.route('/')
-    def error_index():
-        return jsonify({
-            "error": f"Failed to initialize app: {str(e)}",
-            "traceback": traceback.format_exc()
-        }), 500
+# Create a new Flask app just for the API
+app = Flask(__name__)
+app.static_folder = Path(__file__).parent.parent / 'static'
+app.template_folder = Path(__file__).parent.parent / 'templates'
 
-# Handler for Vercel - this is what Vercel calls
+@app.route('/')
+def index():
+    """Return a simple welcome message."""
+    logger.info("Index route called")
+    return jsonify({
+        "message": "Welcome to Cal AI!",
+        "status": "API is running",
+        "environment": os.environ.get('VERCEL_ENV', 'local')
+    })
+
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint."""
+    logger.info("Health check endpoint called")
+    return jsonify({
+        "status": "ok",
+        "environment": {
+            "PYTHONPATH": os.environ.get('PYTHONPATH'),
+            "FLASK_ENV": os.environ.get('FLASK_ENV'),
+            "VERCEL_ENV": os.environ.get('VERCEL_ENV')
+        },
+        "directories": {
+            "current": os.getcwd(),
+            "static_folder": str(app.static_folder),
+            "template_folder": str(app.template_folder),
+            "static_exists": os.path.exists(app.static_folder) if app.static_folder else False,
+            "templates_exist": os.path.exists(app.template_folder) if app.template_folder else False,
+        }
+    })
+
+@app.errorhandler(500)
+def server_error(e):
+    """Handle server errors."""
+    error_msg = str(e)
+    logger.error(f"Server error: {error_msg}")
+    logger.error(traceback.format_exc())
+    return jsonify(error=error_msg, traceback=traceback.format_exc()), 500
+
+# Handler for Vercel
 def handler(request, context):
     """
     This is the handler that Vercel calls when your serverless function is triggered.
@@ -73,37 +87,4 @@ def handler(request, context):
         return {
             "statusCode": 500,
             "body": f"Failed to process request: {str(e)}"
-        }
-
-# For Vercel platform
-def render_page(path):
-    """
-    This is called by Vercel platform to render a page.
-    """
-    logger.info(f"Render page called for path: {path}")
-    return app
-
-# Default route - this will be used if request is directly to index.py
-@app.route('/api/health')
-def health_check():
-    """
-    Simple health check endpoint to verify the function is working.
-    """
-    logger.info("Health check endpoint called")
-    return jsonify({
-        "status": "ok",
-        "environment": {
-            "PYTHONPATH": os.environ.get('PYTHONPATH'),
-            "FLASK_ENV": os.environ.get('FLASK_ENV'),
-            "VERCEL_ENV": os.environ.get('VERCEL_ENV')
-        }
-    })
-
-# Handle invalid paths
-@app.route('/api/<path:invalid_path>')
-def handle_invalid_api_route(invalid_path):
-    """
-    Redirect API routes to the main app.
-    """
-    logger.info(f"Invalid API path: {invalid_path}")
-    return redirect('/') 
+        } 
