@@ -3,128 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriVision - Meal Analysis (UPDATED UI)</title>
+    <title>NutriVision - Meal Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Override any potential cached CSS with inline styles */
-        .update-banner {
-            background-color: #f44336;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <div class="update-banner">
-            THIS IS THE UPDATED UI VERSION WITH MODERN DESIGN - MARCH 14
-        </div>
-        
-        <header style="background-color: #3b82f6; color: white; border-radius: 8px; padding: 2rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.08);">
-            <h1><i class="fas fa-utensils"></i> NutriVision</h1>
+        <header>
+            <h1>NutriVision</h1>
             <p>Upload a meal photo for instant AI-powered nutritional analysis</p>
         </header>
 
         <main>
-            <div class="input-section">
-                <div class="tabs">
-                    <button class="tab-btn active" id="upload-tab"><i class="fas fa-upload"></i> Upload Image</button>
-                    <button class="tab-btn" id="camera-tab"><i class="fas fa-camera"></i> Take Photo</button>
-                </div>
-
-                <div class="tab-content" id="upload-content">
-                    <form id="upload-form" enctype="multipart/form-data">
-                        <div class="file-upload-container">
-                            <label for="file-upload" class="file-upload-label">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <span>Choose a file or drag it here</span>
-                                <small>Supports JPG, PNG, WEBP (max 10MB)</small>
-                            </label>
-                            <input type="file" id="file-upload" name="file" accept="image/*">
-                            <div id="file-preview-container" class="hidden">
-                                <img id="file-preview" src="#" alt="Preview">
-                                <button type="button" id="remove-preview" class="btn-remove"><i class="fas fa-times"></i></button>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn-analyze"><i class="fas fa-bolt"></i> Analyze Meal</button>
-                    </form>
-                </div>
-
-                <div class="tab-content hidden" id="camera-content">
-                    <div class="camera-container">
-                        <video id="camera-feed" autoplay></video>
-                        <canvas id="camera-canvas" class="hidden"></canvas>
-                        <div id="camera-preview-container" class="hidden">
-                            <img id="camera-preview" src="#" alt="Preview">
-                            <button type="button" id="retake-photo" class="btn-remove"><i class="fas fa-redo"></i></button>
-                        </div>
-                    </div>
-                    <div class="camera-controls">
-                        <button id="btn-start-camera" class="btn-camera"><i class="fas fa-video"></i> Start Camera</button>
-                        <button id="btn-take-photo" class="btn-camera hidden"><i class="fas fa-camera"></i> Take Photo</button>
-                        <button id="btn-analyze-photo" class="btn-analyze hidden"><i class="fas fa-bolt"></i> Analyze Meal</button>
-                    </div>
+            <!-- Input Section -->
+            <div id="input-section">
+                <div class="buttons">
+                    <label for="file-upload" class="btn btn-primary">
+                        <span class="icon">📷</span>
+                        <span>Upload Image</span>
+                    </label>
+                    <input type="file" id="file-upload" name="file" accept="image/*" hidden>
+                    
+                    <button id="btn-take-photo" class="btn btn-primary">
+                        <span class="icon">📸</span>
+                        <span>Take Photo</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="result-section hidden" id="result-container">
-                <div class="loader hidden" id="loader">
-                    <div class="spinner"></div>
-                    <p>Analyzing your meal with AI...</p>
+            <!-- Camera Section (hidden by default) -->
+            <div id="camera-section" class="hidden">
+                <video id="camera-feed" autoplay></video>
+                <canvas id="camera-canvas" hidden></canvas>
+                
+                <div class="buttons">
+                    <button id="btn-capture" class="btn btn-primary">Capture</button>
+                    <button id="btn-cancel-camera" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Preview Section (hidden by default) -->
+            <div id="preview-section" class="hidden">
+                <div class="image-preview">
+                    <img id="preview-image" src="#" alt="Preview">
                 </div>
                 
-                <div id="results-content" class="hidden">
-                    <div class="result-header">
-                        <h2>Meal Analysis Results</h2>
-                        <p id="meal-description"></p>
+                <div class="buttons">
+                    <button id="btn-analyze" class="btn btn-primary">Analyze</button>
+                    <button id="btn-retry" class="btn btn-secondary">Retry</button>
+                </div>
+            </div>
+
+            <!-- Loading Section (hidden by default) -->
+            <div id="loading-section" class="hidden">
+                <div class="loader"></div>
+                <p>Analyzing your meal with AI...</p>
+            </div>
+
+            <!-- Results Section (hidden by default) -->
+            <div id="results-section" class="hidden">
+                <h2>Nutritional Analysis</h2>
+                
+                <div class="nutrition-overview">
+                    <div class="nutrition-item calories">
+                        <h3>Calories</h3>
+                        <p id="calories-value">0</p>
                     </div>
                     
-                    <div class="nutrition-overview">
-                        <div class="calorie-counter">
-                            <h3 id="calorie-count">0</h3>
-                            <p>estimated calories</p>
+                    <div class="nutrition-grid">
+                        <div class="nutrition-item proteins">
+                            <h3>Protein</h3>
+                            <p><span id="proteins-value">0</span>g</p>
                         </div>
                         
-                        <div class="macro-nutrients">
-                            <div class="macro-item protein">
-                                <div class="macro-icon"><i class="fas fa-drumstick-bite"></i></div>
-                                <div class="macro-data">
-                                    <h4>Protein</h4>
-                                    <p><span id="protein-count">0</span>g</p>
-                                </div>
-                            </div>
-                            <div class="macro-item fats">
-                                <div class="macro-icon"><i class="fas fa-oil-can"></i></div>
-                                <div class="macro-data">
-                                    <h4>Fats</h4>
-                                    <p><span id="fat-count">0</span>g</p>
-                                </div>
-                            </div>
-                            <div class="macro-item carbs">
-                                <div class="macro-icon"><i class="fas fa-bread-slice"></i></div>
-                                <div class="macro-data">
-                                    <h4>Carbs</h4>
-                                    <p><span id="carb-count">0</span>g</p>
-                                </div>
-                            </div>
+                        <div class="nutrition-item fats">
+                            <h3>Fats</h3>
+                            <p><span id="fats-value">0</span>g</p>
+                        </div>
+                        
+                        <div class="nutrition-item carbs">
+                            <h3>Carbs</h3>
+                            <p><span id="carbs-value">0</span>g</p>
                         </div>
                     </div>
-                    
-                    <button id="btn-new-analysis" class="btn-analyze"><i class="fas fa-redo"></i> New Analysis</button>
                 </div>
                 
-                <div id="error-message" class="hidden">
-                    <div class="error-icon"><i class="fas fa-exclamation-circle"></i></div>
-                    <h3>Something went wrong</h3>
-                    <p id="error-text"></p>
-                    <button id="btn-try-again" class="btn-analyze">Try Again</button>
-                </div>
+                <button id="btn-new-analysis" class="btn btn-primary">New Analysis</button>
+            </div>
+
+            <!-- Error Section (hidden by default) -->
+            <div id="error-section" class="hidden">
+                <div class="error-icon">⚠️</div>
+                <h3>Something went wrong</h3>
+                <p id="error-message"></p>
+                <button id="btn-try-again" class="btn btn-primary">Try Again</button>
             </div>
         </main>
 
